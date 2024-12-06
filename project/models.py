@@ -3,7 +3,18 @@ from datetime import datetime
 
 
 # sensordata 정의
-class SensorData(BaseModel):
+class IllData(BaseModel):
+    illumination: float
+    water_level: float
+    time: datetime
+
+
+class SoilData(BaseModel):
+    soil_humid: float
+    time: datetime
+
+
+class TemData(BaseModel):
     illumination: float
     soil_humid: float
     temperature: float

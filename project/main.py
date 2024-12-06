@@ -86,7 +86,7 @@ async def upload_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
 
-# 센서 명령어 기록 추가
+# 센서 명령어 로그 추가
 @app.post("/data/control")
 async def add_control_log(data: CommandData):
     try:
@@ -110,7 +110,7 @@ async def add_control_log(data: CommandData):
 async def get_all_data():
     try:
         conn = get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(dictionary=True)
 
         # 조도 및 수위 데이터 조회
         cursor.execute("SELECT * FROM illu_data")
@@ -132,6 +132,25 @@ async def get_all_data():
             "temperature_air_data": temperature_air_data,
             "soil_data": soil_data,
         }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching data: {str(e)}")
+
+
+# 센서 작동 로그 불러오기
+@app.get("/data/log")
+async def get_log_data():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 조도 및 수위 데이터 조회
+        cursor.execute("SELECT * FROM control_log")
+        logs = cursor.fetchall()
+        conn.close()
+
+        # 조회 결과 반환
+        return {"logs": logs}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching data: {str(e)}")

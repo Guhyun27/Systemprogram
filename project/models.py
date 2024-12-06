@@ -15,11 +15,8 @@ class SoilData(BaseModel):
 
 
 class TemData(BaseModel):
-    illumination: float
-    soil_humid: float
     temperature: float
     air_humid: float
-    water_level: float
     time: datetime
 
 

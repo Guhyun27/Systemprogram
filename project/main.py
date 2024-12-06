@@ -32,7 +32,7 @@ async def add_illumination_data(data: IllData):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# 온습도 데이터 추가
+# 공기온습도 데이터 추가
 @app.post("/data/temperature_air")
 async def add_temperature_air_data(data: TemData):
     try:
@@ -103,3 +103,35 @@ async def add_control_log(data: CommandData):
         return {"message": "Control log added successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# 식물 데이터 불러오기
+@app.get("/data/all")
+async def get_all_data():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # 조도 및 수위 데이터 조회
+        cursor.execute("SELECT * FROM illu_data")
+        illumination_data = [dict(row) for row in cursor.fetchall()]
+
+        # 온도 및 공기 습도 데이터 조회
+        cursor.execute("SELECT * FROM tem_air_data")
+        temperature_air_data = [dict(row) for row in cursor.fetchall()]
+
+        # 토양 습도 데이터 조회
+        cursor.execute("SELECT * FROM soil_data")
+        soil_data = [dict(row) for row in cursor.fetchall()]
+
+        conn.close()
+
+        # 하나의 JSON으로 결합
+        return {
+            "illumination_data": illumination_data,
+            "temperature_air_data": temperature_air_data,
+            "soil_data": soil_data,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching data: {str(e)}")

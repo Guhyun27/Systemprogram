@@ -187,7 +187,7 @@ async def list_uploaded_files():
         raise HTTPException(status_code=500, detail=f"Error fetching files: {str(e)}")
 
 
-@app.get("/data/image/{image_id}")
+@app.get("/data/images/{image_id}")
 async def download_image(image_id: int):
     try:
         # 데이터베이스에서 파일 경로 조회

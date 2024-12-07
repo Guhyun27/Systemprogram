@@ -1,16 +1,16 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 from models import IllData, SoilData, TemData, CommandData
-from db_config import get_db_connection
 import os
 from pathlib import Path
+from uuid import uuid4
+from db_config import get_db_connection
+
 
 app = FastAPI()
 
 # 사진 저장할 폴더 설정
-UPLOAD_DIRECTORY = "plant_iamges"
-
-# 디렉터리가 없으면 생성
-Path(UPLOAD_DIRECTORY).mkdir(parents=True, exist_ok=True)
+UPLOAD_DIRECTORY = "/image"
 
 
 # 조도,수위 데이터 추가
@@ -74,14 +74,24 @@ async def add_soil_data(data: SoilData):
 @app.post("/data/image")
 async def upload_image(file: UploadFile = File(...)):
     try:
-        # 파일 저장 경로 설정
-        file_path = os.path.join(UPLOAD_DIRECTORY, file.filename)
+        # 고유한 파일 이름 생성
+        unique_filename = f"{uuid4().hex}_{file.filename}"
+        file_path = os.path.join(UPLOAD_DIRECTORY, unique_filename)
 
         # 파일 저장
         with open(file_path, "wb") as buffer:
             buffer.write(await file.read())
 
-        return {"message": f"File {file.filename} uploaded successfully"}
+        # 파일 경로를 데이터베이스에 저장
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        query = "INSERT INTO image_paths (file_path) VALUES (%s)"
+        cursor.execute(query, (file_path,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return {"message": "File uploaded successfully", "file_path": file_path}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error uploading file: {str(e)}")
 
@@ -154,3 +164,48 @@ async def get_log_data():
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching data: {str(e)}")
+
+
+# 식물 이미지 불러오기
+@app.get("/data/images")
+async def list_uploaded_files():
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 파일 경로 조회
+        cursor.execute(
+            "SELECT id, file_path, uploaded_at FROM image_paths ORDER BY uploaded_at DESC"
+        )
+        files = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        return {"files": files}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching files: {str(e)}")
+
+
+@app.get("/data/image/{image_id}")
+async def download_image(image_id: int):
+    try:
+        # 데이터베이스에서 파일 경로 조회
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT file_path FROM image_paths WHERE id = %s", (image_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Image not found")
+
+        file_path = result["file_path"]
+        if not os.path.exists(file_path):
+            raise HTTPException(status_code=404, detail="File not found on server")
+
+        # 파일 반환
+        return FileResponse(file_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching image: {str(e)}")

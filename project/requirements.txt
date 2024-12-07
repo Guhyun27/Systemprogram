@@ -2,3 +2,5 @@ fastapi
 uvicorn
 gunicorn
 mysql-connector-python
+python-multipart
+uuid

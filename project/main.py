@@ -85,7 +85,7 @@ async def upload_image(file: UploadFile = File(...)):
         # 파일 경로를 데이터베이스에 저장
         conn = get_db_connection()
         cursor = conn.cursor()
-        query = "INSERT INTO image_paths (file_path) VALUES (%s)"
+        query = "INSERT INTO image_path (file_path) VALUES (%s)"
         cursor.execute(query, (file_path,))
         conn.commit()
         cursor.close()
@@ -175,7 +175,7 @@ async def list_uploaded_files():
 
         # 파일 경로 조회
         cursor.execute(
-            "SELECT id, file_path, uploaded_at FROM image_paths ORDER BY uploaded_at DESC"
+            "SELECT id, file_path, uploaded_at FROM image_path ORDER BY uploaded_at DESC"
         )
         files = cursor.fetchall()
 
@@ -193,7 +193,7 @@ async def download_image(image_id: int):
         # 데이터베이스에서 파일 경로 조회
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT file_path FROM image_paths WHERE id = %s", (image_id,))
+        cursor.execute("SELECT file_path FROM image_path WHERE id = %s", (image_id,))
         result = cursor.fetchone()
         cursor.close()
         conn.close()

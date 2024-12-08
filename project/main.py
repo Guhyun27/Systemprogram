@@ -2,6 +2,8 @@ from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 from models import IllData, SoilData, TemData, CommandData
 import os
+import uvicorn
+from starlette.middleware.cors import CORSMiddleware
 from pathlib import Path
 from uuid import uuid4
 from db_config import get_db_connection
@@ -11,6 +13,20 @@ app = FastAPI()
 
 # 사진 저장할 폴더 설정
 UPLOAD_DIRECTORY = "/image"
+
+
+origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0")
 
 
 # 조도,수위 데이터 추가
@@ -190,7 +206,7 @@ async def list_uploaded_files():
 @app.get("/data/images/{image_id}")
 async def download_image(image_id: int):
     try:
-        # 데이터베이스에서 파일 경로 조회
+        # 파일 경로 조회
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT file_path FROM image_path WHERE id = %s", (image_id,))
